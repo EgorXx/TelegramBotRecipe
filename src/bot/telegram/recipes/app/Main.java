@@ -1,19 +1,27 @@
 package bot.telegram.recipes.app;
 
+import bot.telegram.recipes.chatbot.config.BotProperties;
+import bot.telegram.recipes.chatbot.handlers.UpdateDispatcher;
+import bot.telegram.recipes.chatbot.presentation.Bot;
 import bot.telegram.recipes.repository.impl.RecipeRepositoryJdbcImpl;
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
+import bot.telegram.recipes.util.jdbc.JdbcConfig;
+import org.telegram.telegrambots.meta.TelegramBotsApi;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
 public class Main {
-    public static void main(String[] args) {
-        HikariConfig config = new HikariConfig();
-        config.setJdbcUrl("jdbc:postgresql://localhost:5432/telegram_bot_recipes");
-        config.setUsername("postgres");
-        config.setPassword("qwerty007");
+    public static void main(String[] args) throws TelegramApiException {
+        //TODO репозитории сервисы (сервисы принимают репозитории)
+        RecipeRepositoryJdbcImpl recipeRepositoryJdbcImpl = new RecipeRepositoryJdbcImpl(JdbcConfig.getDataSource());
 
-        HikariDataSource ds = new HikariDataSource(config);
-        RecipeRepositoryJdbcImpl recipeRepositoryJdbcImpl = new RecipeRepositoryJdbcImpl(ds);
+        //TODO диспетчер принимает сервисы
+        UpdateDispatcher dispatcher = new UpdateDispatcher();
 
-        recipeRepositoryJdbcImpl.printConnection();
+
+        BotProperties prop = BotProperties.load();
+        Bot bot  = new Bot(prop.getUsername(), prop.getToken(), dispatcher);
+        TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
+
+        botsApi.registerBot(bot);
     }
 }

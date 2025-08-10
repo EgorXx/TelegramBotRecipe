@@ -1,3 +1,3 @@
 package bot.telegram.recipes.entities;
 
-enum Unit { GRAM, MILLILITER, CUP, TABLESPOON, TEASPOON }
+public enum Unit { GRAM, MILLILITER, CUP, TABLESPOON, TEASPOON }
