@@ -5,5 +5,11 @@ public enum Stage {
     WAITING_TYPE,
     WAITING_NUMBER,
     WAITING_TEXT,
-    WAITING_TIME
+    WAITING_TIME,
+    ADD_NAME,
+    ADD_ING_NAME,
+    ADD_ING_COUNT,
+    ADD_ING_UNIT,
+    ADD_STEPS,
+    ADD_CONFIRM
 }

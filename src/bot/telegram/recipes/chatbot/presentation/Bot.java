@@ -9,10 +9,9 @@ public class Bot extends TelegramLongPollingBot {
     private final String token;
     private UpdateDispatcher dispatcher;
 
-    public Bot(String username, String token, UpdateDispatcher dispatcher) {
+    public Bot(String username, String token) {
         this.username = username;
         this.token = token;
-        this.dispatcher = dispatcher;
     }
 
     @Override
@@ -25,9 +24,13 @@ public class Bot extends TelegramLongPollingBot {
         return token;
     }
 
+    public void setDispatcher(UpdateDispatcher dispatcher) {
+        this.dispatcher = dispatcher;
+    }
+
     @Override
     public void onUpdateReceived(Update update) {
-        //TODO dispatcher.route(update);
         System.out.println(update);
+        dispatcher.route(update);
     }
 }

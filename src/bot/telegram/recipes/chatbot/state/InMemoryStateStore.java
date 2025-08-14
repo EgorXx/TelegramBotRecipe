@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class InMemoryStateStore  implements StateStore {
 
-    private Map<Long, UserSession> userSessions;
+    private final Map<Long, UserSession> userSessions;
 
     public InMemoryStateStore() {
         userSessions = new ConcurrentHashMap<>();
@@ -14,6 +14,10 @@ public class InMemoryStateStore  implements StateStore {
 
     @Override
     public UserSession get(Long chatId) {
+        if (!userSessions.containsKey(chatId)) {
+            userSessions.put(chatId, UserSession.defaultSession());
+        }
+
         return userSessions.get(chatId);
     }
 
@@ -24,11 +28,16 @@ public class InMemoryStateStore  implements StateStore {
 
     @Override
     public void reset(Long chatId) {
-        userSessions.remove(chatId);
+        userSessions.put(chatId, UserSession.defaultSession());
     }
 
     @Override
     public void clear() {
         userSessions.clear();
+    }
+
+    @Override
+    public boolean contains(Long chatId) {
+        return userSessions.containsKey(chatId);
     }
 }

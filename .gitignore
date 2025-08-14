@@ -44,3 +44,4 @@ lib/
 target/
 build/
 hs_err_pid
+application.properties
