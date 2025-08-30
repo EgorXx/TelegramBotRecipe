@@ -23,10 +23,10 @@ public class UpdateDispatcher {
     public void route(Update update) {
         if (update.hasMessage() && update.getMessage().isCommand()) {
             commandHandler.handleCommand(update.getMessage());
-//        } else if (update.hasCallbackQuery()) {
-//            callbackHandler.handleCallback(update.getCallbackQuery());
-//        } else if (update.hasMessage() && update.getMessage().hasText()) {
-//            textHandler.handleTextMessage(update.getMessage());
+        } else if (update.hasCallbackQuery()) {
+            callbackHandler.handleCallback(update.getCallbackQuery());
+        } else if (update.hasMessage() && update.getMessage().hasText()) {
+            textHandler.handleTextMessage(update.getMessage());
         } else {
             // TODO реализовать я не понимаю вашего сообщения (должно сообщене для помощи)
         }

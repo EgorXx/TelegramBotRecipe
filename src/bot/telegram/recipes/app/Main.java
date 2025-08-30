@@ -1,15 +1,13 @@
 package bot.telegram.recipes.app;
 
 import bot.telegram.recipes.chatbot.config.BotProperties;
-import bot.telegram.recipes.chatbot.handlers.CallbackHandler;
-import bot.telegram.recipes.chatbot.handlers.CommandHandler;
-import bot.telegram.recipes.chatbot.handlers.TextHandler;
-import bot.telegram.recipes.chatbot.handlers.UpdateDispatcher;
+import bot.telegram.recipes.chatbot.handlers.*;
 import bot.telegram.recipes.chatbot.presentation.Bot;
 import bot.telegram.recipes.chatbot.presentation.TelegramBotSender;
 import bot.telegram.recipes.chatbot.state.InMemoryStateStore;
 import bot.telegram.recipes.chatbot.state.StateStore;
 import bot.telegram.recipes.repository.impl.RecipeRepositoryJdbcImpl;
+import bot.telegram.recipes.service.RecipeService;
 import bot.telegram.recipes.util.jdbc.JdbcConfig;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -25,14 +23,16 @@ public class Main {
         botsApi.registerBot(bot);
 
         //TODO репозитории сервисы (сервисы принимают репозитории)
+        RecipeService recipeService = new RecipeService();
         RecipeRepositoryJdbcImpl recipeRepositoryJdbcImpl = new RecipeRepositoryJdbcImpl(JdbcConfig.getDataSource());
 
         StateStore stateStore = new InMemoryStateStore();
 
         //TODO диспетчер принимает сервисы
+        AddRecipeHandler addRecipeHandler = new AddRecipeHandler(stateStore, telegramBotSender, recipeService);
         CommandHandler commandHandler = new CommandHandler(stateStore, telegramBotSender);
-        CallbackHandler callbackHandler = new CallbackHandler(stateStore, telegramBotSender);
-        TextHandler textHandler = new TextHandler(stateStore, telegramBotSender);
+        CallbackHandler callbackHandler = new CallbackHandler(stateStore, telegramBotSender, addRecipeHandler);
+        TextHandler textHandler = new TextHandler(stateStore, telegramBotSender, addRecipeHandler);
 
         UpdateDispatcher dispatcher = new UpdateDispatcher(commandHandler, callbackHandler, textHandler);
 

@@ -1,5 +1,6 @@
 package bot.telegram.recipes.chatbot.state;
 
+import bot.telegram.recipes.entities.Ingredient;
 import bot.telegram.recipes.entities.Recipe;
 import bot.telegram.recipes.entities.TypeOfDish;
 
@@ -11,6 +12,7 @@ public class UserSession {
     private TypeOfDish selectedDish;
     private List<Long> lastIdList;
     private Recipe draftRecipe;
+    private Ingredient tempIngredient;
 
     public static UserSession defaultSession() {
         UserSession session = new UserSession();
@@ -21,6 +23,7 @@ public class UserSession {
         recipe.setIngredients(new ArrayList<>());
 
         session.draftRecipe = recipe;
+        session.tempIngredient = new Ingredient();
 
         return session;
     }
@@ -41,6 +44,10 @@ public class UserSession {
         return draftRecipe;
     }
 
+    public Ingredient getTempIngredient() {
+        return tempIngredient;
+    }
+
     public void setStage(Stage stage) {
         this.stage = stage;
     }
@@ -56,4 +63,6 @@ public class UserSession {
     public void setDarftRecipe(Recipe darftRecipe) {
         this.draftRecipe = darftRecipe;
     }
+
+    public void setTempIngredient(Ingredient tempIngredient) {this.tempIngredient = tempIngredient;}
 }
