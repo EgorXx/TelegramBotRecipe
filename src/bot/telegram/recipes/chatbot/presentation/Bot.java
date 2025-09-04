@@ -30,7 +30,6 @@ public class Bot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        System.out.println(update);
         dispatcher.route(update);
     }
 }

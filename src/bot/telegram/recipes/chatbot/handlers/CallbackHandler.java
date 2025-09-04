@@ -24,7 +24,7 @@ public class CallbackHandler {
         String id = callbackQuery.getId();
         telegramBotSender.execute(new AnswerCallbackQuery(id));
 
-        if (callbackQuery.getData().startsWith("ADD")) {
+        if (callbackQuery.getData().startsWith("ADD") || callbackQuery.getData().startsWith("EDIT")) {
             addRecipeHandler.addCallback(callbackQuery);
         }
     }

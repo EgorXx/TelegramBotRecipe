@@ -11,6 +11,7 @@ public class UserSession {
     private Stage stage;
     private TypeOfDish selectedDish;
     private List<Long> lastIdList;
+    private Integer lastIndex;
     private Recipe draftRecipe;
     private Ingredient tempIngredient;
 
@@ -47,6 +48,10 @@ public class UserSession {
     public Ingredient getTempIngredient() {
         return tempIngredient;
     }
+
+    public Integer getLastIndex() {return lastIndex;}
+
+    public void setLastIndex(Integer lastIndex) {this.lastIndex = lastIndex;}
 
     public void setStage(Stage stage) {
         this.stage = stage;

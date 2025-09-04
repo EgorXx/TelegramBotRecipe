@@ -31,6 +31,7 @@ public class TextHandler {
 
     public Boolean isAddRecipeTextStage(Stage stage) {
         return stage == Stage.ADD_NAME || stage == Stage.ADD_ING_NAME || stage == Stage.ADD_ING_COUNT
-                || stage == Stage.ADD_STEPS;
+                || stage == Stage.ADD_STEPS || stage == Stage.EDIT_TITLE || stage == Stage.EDIT_STEPS
+                || stage == Stage.EDIT_ING || stage == Stage.EDIT_ING_TITLE || stage == Stage.EDIT_ING_COUNT;
     }
 }

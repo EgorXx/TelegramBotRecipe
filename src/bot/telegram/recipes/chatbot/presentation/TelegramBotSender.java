@@ -2,6 +2,7 @@ package bot.telegram.recipes.chatbot.presentation;
 
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.bots.AbsSender;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -78,6 +79,37 @@ public class TelegramBotSender {
                 .build();
         try {
             sender.execute(msg);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void editMessageTextWithKeybord(Long chatId, Integer mId, String newText, InlineKeyboardMarkup newKeyboard) {
+        EditMessageText editMessageText = EditMessageText.builder()
+                .chatId(chatId.toString())
+                .messageId(mId)
+                .text(newText)
+                .replyMarkup(newKeyboard)
+                .build();
+
+        try {
+            sender.execute(editMessageText);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void editMessageTextWithKeybord(Long chatId, Integer mId, String newText, InlineKeyboardMarkup newKeyboard, String parseM) {
+        EditMessageText editMessageText = EditMessageText.builder()
+                .chatId(chatId.toString())
+                .messageId(mId)
+                .text(newText)
+                .parseMode(parseM)
+                .replyMarkup(newKeyboard)
+                .build();
+
+        try {
+            sender.execute(editMessageText);
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }

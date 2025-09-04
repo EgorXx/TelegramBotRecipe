@@ -109,4 +109,107 @@ public class KeyboardFactory {
 
         return keyboardForChooseUnitOfIngredient;
     }
+
+    public static InlineKeyboardMarkup doneOrRewiewRecipe() {
+        InlineKeyboardButton done = InlineKeyboardButton.builder()
+                .text("Готово").callbackData("ADD:RECIPE:SAVE")
+                .build();
+
+        InlineKeyboardButton rewiew = InlineKeyboardButton.builder()
+                .text("Редактирвоать").callbackData("ADD:RECIPE:REWIEW")
+                .build();
+
+        InlineKeyboardMarkup doneOrRewiew = InlineKeyboardMarkup.builder()
+                .keyboardRow(List.of(done))
+                .keyboardRow(List.of(rewiew))
+                .build();
+
+        return doneOrRewiew;
+    }
+
+    public static InlineKeyboardMarkup selectFieldForEditRecipe() {
+        InlineKeyboardButton title = InlineKeyboardButton.builder()
+                .text("Название блюда").callbackData("EDIT:FIELD:SELECT:TITLE")
+                .build();
+
+        InlineKeyboardButton type = InlineKeyboardButton.builder()
+                .text("Тип блюда").callbackData("EDIT:FIELD:SELECT:TYPE")
+                .build();
+
+        InlineKeyboardButton ingredients = InlineKeyboardButton.builder()
+                .text("Список ингредиентов").callbackData("EDIT:FIELD:SELECT:INGREDIENTS")
+                .build();
+
+        InlineKeyboardButton steps = InlineKeyboardButton.builder()
+                .text("Пошаговый рецепт блюда").callbackData("EDIT:FIELD:SELECT:STEPS")
+                .build();
+
+        InlineKeyboardButton done = InlineKeyboardButton.builder()
+                .text("Завершить редактирование").callbackData("EDIT:DONE")
+                .build();
+
+        InlineKeyboardMarkup fieldForEditRecipe = InlineKeyboardMarkup.builder()
+                .keyboardRow(List.of(title))
+                .keyboardRow(List.of(type))
+                .keyboardRow(List.of(ingredients))
+                .keyboardRow(List.of(steps))
+                .keyboardRow(List.of(done))
+                .build();
+
+        return fieldForEditRecipe;
+    }
+
+    public static InlineKeyboardMarkup selectFieldForEditIngredients() {
+        InlineKeyboardButton change = InlineKeyboardButton.builder()
+                .text("Изменить ингредиент").callbackData("EDIT:ING:LIST:CHANGE")
+                .build();
+
+        InlineKeyboardButton add = InlineKeyboardButton.builder()
+                .text("Добавить ингредиент").callbackData("EDIT:ING:LIST:ADD")
+                .build();
+
+        InlineKeyboardButton remove = InlineKeyboardButton.builder()
+                .text("Удалить ингредиент").callbackData("EDIT:ING:LIST:REMOVE")
+                .build();
+
+        InlineKeyboardButton ready = InlineKeyboardButton.builder()
+                .text("Готово").callbackData("EDIT:ING:LIST:READY")
+                .build();
+
+        InlineKeyboardMarkup fieldForEditIngredients= InlineKeyboardMarkup.builder()
+                .keyboardRow(List.of(change))
+                .keyboardRow(List.of(add))
+                .keyboardRow(List.of(remove))
+                .keyboardRow(List.of(ready))
+                .build();
+
+        return fieldForEditIngredients;
+    }
+
+    public static InlineKeyboardMarkup selectFieldForEditIng() {
+        InlineKeyboardButton title = InlineKeyboardButton.builder()
+                .text("Название").callbackData("EDIT:ING:TITLE")
+                .build();
+
+        InlineKeyboardButton unit = InlineKeyboardButton.builder()
+                .text("Единица измерения").callbackData("EDIT:ING:UNIT")
+                .build();
+
+        InlineKeyboardButton count = InlineKeyboardButton.builder()
+                .text("Количество").callbackData("EDIT:ING:COUNT")
+                .build();
+
+        InlineKeyboardButton ready = InlineKeyboardButton.builder()
+                .text("Готово").callbackData("EDIT:ING:READY")
+                .build();
+
+        InlineKeyboardMarkup fieldForEditIng= InlineKeyboardMarkup.builder()
+                .keyboardRow(List.of(title))
+                .keyboardRow(List.of(unit))
+                .keyboardRow(List.of(count))
+                .keyboardRow(List.of(ready))
+                .build();
+
+        return fieldForEditIng;
+    }
 }

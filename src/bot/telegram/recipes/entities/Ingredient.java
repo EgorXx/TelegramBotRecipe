@@ -50,4 +50,5 @@ public class Ingredient {
     public Unit getUnit() {
         return unit;
     }
+
 }
