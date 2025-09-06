@@ -22,5 +22,7 @@ public enum Stage {
     EDIT_ING_UNIT,
     EDIT_ING_COUNT,
     REMOVE_ING,
-    EDIT_ING_EDIT
+    EDIT_ING_ADD_NAME,
+    EDIT_ING_ADD_UNIT,
+    EDIT_ING_ADD_COUNT
 }

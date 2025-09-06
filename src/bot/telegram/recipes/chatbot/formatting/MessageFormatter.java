@@ -94,6 +94,12 @@ public class MessageFormatter {
                 + "\n\n" + "Введите номер ингредиента, который хотите отредактировать";
     }
 
+    public static String removeIng(List<Ingredient> ingredients) {
+        return "Список ингредиентов:\n"
+                + ingredientToString(ingredients)
+                + "\n\n" + "Введите номер ингредиента, который хотите удалить";
+    }
+
     public static String selectFieldForEditIng(Ingredient ingredient, Integer numberOfIng) {
         String titleIngredient = ingredient.getTitle();
         String unit = UnitToString(ingredient.getUnit());

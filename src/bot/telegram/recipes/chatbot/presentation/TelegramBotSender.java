@@ -2,6 +2,7 @@ package bot.telegram.recipes.chatbot.presentation;
 
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.bots.AbsSender;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -110,6 +111,19 @@ public class TelegramBotSender {
 
         try {
             sender.execute(editMessageText);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void deleteMessage(Long chatId, Integer mId) {
+        DeleteMessage deleteMessage = DeleteMessage.builder()
+                .chatId(chatId.toString())
+                .messageId(mId)
+                .build();
+
+        try {
+            sender.execute(deleteMessage);
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }

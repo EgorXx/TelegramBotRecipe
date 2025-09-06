@@ -58,6 +58,7 @@ public class AddRecipeHandler {
                     handleSelectedUnit(callbackQuery);
                 }
             }
+
             case ADD_ING_NAME -> {
                 if (!callbackQuery.getData().startsWith("ADD:ING:DONE")) {
                     telegramBotSender.sendMessage(chatId,
@@ -68,6 +69,7 @@ public class AddRecipeHandler {
                     handleDoneIng(callbackQuery);
                 }
             }
+
             case ADD_REWIEW -> {
                 if (callbackQuery.getData().startsWith("ADD:RECIPE:REWIEW")) {
                     handleStartEditRecipe(callbackQuery);
@@ -102,6 +104,12 @@ public class AddRecipeHandler {
             case EDIT_ING_LIST -> {
                 if (callbackQuery.getData().startsWith("EDIT:ING:LIST:CHANGE")) {
                     handleStartChangeIng(callbackQuery);
+                } else if (callbackQuery.getData().startsWith("EDIT:ING:LIST:REMOVE")) {
+                    handleStartRemoveIng(callbackQuery);
+                } else if (callbackQuery.getData().startsWith("EDIT:ING:LIST:ADD")) {
+                    handleEditIngAddName(callbackQuery);
+                } else if (callbackQuery.getData().startsWith("EDIT:ING:LIST:READY")) {
+                    handleEditListIngDone(callbackQuery);
                 }
             }
 
@@ -112,6 +120,8 @@ public class AddRecipeHandler {
                     handleEditUnitIng(callbackQuery);
                 } else if (callbackQuery.getData().startsWith("EDIT:ING:COUNT")) {
                     handleEditCountIng(callbackQuery);
+                } else if (callbackQuery.getData().startsWith("EDIT:ING:READY")) {
+                    handleEditIngredientsRecipe(callbackQuery);
                 }
             }
 
@@ -120,6 +130,26 @@ public class AddRecipeHandler {
                     //TODO Переделать обработчк для нужного экрана
                 } else {
                     handleAddNewUnitIng(callbackQuery);
+                }
+            }
+
+            case EDIT_ING_ADD_UNIT -> {
+                if (!callbackQuery.getData().startsWith("ADD:UNIT:")) {
+                    telegramBotSender.sendMessage(chatId,
+                            "Извините, но сейчас вам нужно выбрать единицу измерения для ингридиента, который хотите добавить :)");
+                    //TODO Переделать обработчк для нужного экрана
+                } else {
+                    handleEditIngSelectedUnit(callbackQuery);
+                }
+            }
+
+            case EDIT_ING_ADD_NAME -> {
+                if (!callbackQuery.getData().startsWith("EDIT:ING:ADD:DONE")) {
+                    telegramBotSender.sendMessage(chatId,
+                            "Извините, но сейчас вам нужно ввести название нового ингредента или завершить добавление ингредиентов :)");
+                    //TODO Переделать обработчк для нужного экрана
+                } else {
+                    handleEditIngAddNewDone(callbackQuery);
                 }
             }
         }
@@ -140,6 +170,9 @@ public class AddRecipeHandler {
             case EDIT_ING -> handleChangeIng(message);
             case EDIT_ING_TITLE -> handleAddNewTitleForIng(message);
             case EDIT_ING_COUNT -> handleAddNewCountForIng(message);
+            case REMOVE_ING -> handleRemoveIng(message);
+            case EDIT_ING_ADD_NAME -> handleEditIngAddNameForIngredient(message);
+            case EDIT_ING_ADD_COUNT -> handleEditIngAddCountForIngredient(message);
         }
     }
 
@@ -759,4 +792,194 @@ public class AddRecipeHandler {
                 KeyboardFactory.selectFieldForEditIng());
     }
 
+    public void handleStartRemoveIng(CallbackQuery callbackQuery) {
+        Long chatId = callbackQuery.getMessage().getChatId();
+        Integer messageId = callbackQuery.getMessage().getMessageId();
+        UserSession userSession = stateStore.get(chatId);
+
+        Recipe draftRecipe = userSession.getDarftRecipe();
+        List<Ingredient> ingredients = draftRecipe.getIngredients();
+
+        userSession.setStage(Stage.REMOVE_ING);
+
+        telegramBotSender.editMessageTextWithKeybord(chatId,
+                messageId,
+                MessageFormatter.removeIng(ingredients),
+                null,
+                "HTML");
+    }
+
+    public void handleRemoveIng(Message message) {
+        Long chatId = message.getChatId();
+        Integer messageId = message.getMessageId();
+        UserSession userSession = stateStore.get(chatId);
+
+        Recipe draftRecipe = userSession.getDarftRecipe();
+        List<Ingredient> ingredients = draftRecipe.getIngredients();
+
+        String text = message.getText() == null ? "" : message.getText().trim();
+
+        Integer numberOfIng = null;
+
+        try {
+            numberOfIng = Integer.parseInt(text);
+        } catch (NumberFormatException e) {
+            telegramBotSender.sendMessage(chatId,
+                    "Введен неправильный формат числа (Пример: 1, 10, 110)");
+
+            telegramBotSender.sendMessageWithParseMode(chatId,
+                    MessageFormatter.changeIng(ingredients),
+                    "HTML");
+            return;
+        }
+
+        if (ingredients.size() < numberOfIng || numberOfIng <= 0) {
+            telegramBotSender.sendMessage(chatId,
+                    "Ингредиента с таким номером нет, повторите ввод");
+
+            telegramBotSender.sendMessageWithParseMode(chatId,
+                    MessageFormatter.changeIng(ingredients),
+                    "HTML");
+            return;
+        }
+
+        ingredients.remove(numberOfIng - 1);
+
+        userSession.setStage(Stage.EDIT_ING_LIST);
+
+        telegramBotSender.sendMessageWithParseMode(chatId,
+                MessageFormatter.editIngList(ingredients),
+                KeyboardFactory.selectFieldForEditIngredients(),
+                "HTML");
+    }
+
+    public void handleEditIngAddName(CallbackQuery callbackQuery) {
+        Long chatId = callbackQuery.getMessage().getChatId();
+        Integer messageId = callbackQuery.getMessage().getMessageId();
+        UserSession userSession = stateStore.get(chatId);
+
+        userSession.setStage(Stage.EDIT_ING_ADD_NAME);
+
+        telegramBotSender.editMessageTextWithKeybord(chatId,
+                messageId,
+                MessageFormatter.addNameForIngredient(),
+                KeyboardFactory.editIngEndForAdd(),
+                "HTML");
+    }
+
+    public void handleEditIngAddNameForIngredient(Message message) {
+        Long chatId = message.getChatId();
+        UserSession userSession = stateStore.get(chatId);
+        String title = message.getText() == null ? "" : message.getText().trim();
+
+        if (title.isEmpty()) {
+            telegramBotSender.sendMessageWithParseMode(chatId,
+                    "Название не может быть пустым, введите название ингридиента",
+                    "HTML");
+            return;
+        }
+
+        Ingredient tempIngredient = userSession.getTempIngredient();
+        tempIngredient.setTitle(title);
+
+        userSession.setStage(Stage.EDIT_ING_ADD_UNIT);
+
+        telegramBotSender.sendMessageWithParseMode(chatId,
+                MessageFormatter.addUnitForIngredient(),
+                KeyboardFactory.chooseUnitOfIngredient(),
+                "HTML");
+    }
+
+    public void handleEditIngSelectedUnit(CallbackQuery callbackQuery) {
+        Long chatId = callbackQuery.getMessage().getChatId();
+        UserSession userSession = stateStore.get(chatId);
+
+        Ingredient tempIngredient = userSession.getTempIngredient();
+        Unit unit = getUnitOfIngredient(callbackQuery);
+        tempIngredient.setUnit(unit);
+
+        userSession.setStage(Stage.EDIT_ING_ADD_COUNT);
+
+        telegramBotSender.sendMessageWithParseMode(chatId,
+                MessageFormatter.addCountForIngredient() + " (" +
+                        MessageFormatter.UnitToString(unit) + ")",
+                "HTML");
+    }
+
+    public void handleEditIngAddCountForIngredient(Message message) {
+        Long chatId = message.getChatId();
+        UserSession userSession = stateStore.get(chatId);
+
+        String count = (message.getText() == null ? "" : message.getText().trim());
+
+        if (count.isEmpty()) {
+            telegramBotSender.sendMessageWithParseMode(chatId,
+                    "Количество не может быть пустым, введите количество ингридиента",
+                    "HTML");
+            return;
+        }
+
+        if ((!stringIsDouble(count)) || count.equals("0")) {
+            telegramBotSender.sendMessage(chatId,
+                    "Введен неправильный формат числа (Пример верного формата: 1.5 / 1,5 / 123)");
+
+            telegramBotSender.sendMessageWithParseMode(chatId,
+                    MessageFormatter.addCountForIngredient() + " (" +
+                            MessageFormatter.UnitToString(userSession.getTempIngredient().getUnit()) + ")",
+                    "HTML");
+
+            return;
+        }
+
+        Ingredient tempIngredient = userSession.getTempIngredient();
+        tempIngredient.setCount(Double.parseDouble(count.replace(",", ".")));
+
+        if (!checkFullFieldIndredient(tempIngredient, message)) {
+            return;
+        }
+
+        Recipe draftRecipe = userSession.getDarftRecipe();
+        draftRecipe.getIngredients().add(tempIngredient);
+        userSession.setTempIngredient(new Ingredient());
+
+        userSession.setStage(Stage.EDIT_ING_ADD_NAME);
+
+        telegramBotSender.sendMessageWithParseMode(chatId,
+                MessageFormatter.addNameForIngredient(),
+                KeyboardFactory.editIngEndForAdd(),
+                "HTML");
+    }
+
+    public void handleEditIngAddNewDone(CallbackQuery callbackQuery) {
+        Long chatId = callbackQuery.getMessage().getChatId();
+        Integer messageId = callbackQuery.getMessage().getMessageId();
+        UserSession userSession = stateStore.get(chatId);
+
+        Recipe draftRecipe = userSession.getDarftRecipe();
+        List<Ingredient> ingredients = draftRecipe.getIngredients();
+
+        userSession.setStage(Stage.EDIT_ING_LIST);
+
+        telegramBotSender.editMessageTextWithKeybord(chatId,
+                messageId,
+                MessageFormatter.editIngList(ingredients),
+                KeyboardFactory.selectFieldForEditIngredients(),
+                "HTML");
+    }
+
+    public void handleEditListIngDone(CallbackQuery callbackQuery) {
+        Long chatId = callbackQuery.getMessage().getChatId();
+        Integer messageId = callbackQuery.getMessage().getMessageId();
+        UserSession userSession = stateStore.get(chatId);
+
+        Recipe draftRecipe = userSession.getDarftRecipe();
+
+        userSession.setStage(Stage.EDIT_FIELD_SELECT);
+
+        telegramBotSender.editMessageTextWithKeybord(chatId,
+                messageId,
+                MessageFormatter.RecipeToString(draftRecipe) + MessageFormatter.startEditRecipe(),
+                KeyboardFactory.selectFieldForEditRecipe(),
+                "HTML");
+    }
 }

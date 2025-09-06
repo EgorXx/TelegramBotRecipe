@@ -212,4 +212,17 @@ public class KeyboardFactory {
 
         return fieldForEditIng;
     }
+
+    public static InlineKeyboardMarkup editIngEndForAdd() {
+        InlineKeyboardButton ready = InlineKeyboardButton.builder()
+                .text("Готово").callbackData("EDIT:ING:ADD:DONE")
+                .build();
+
+
+        InlineKeyboardMarkup keyboardEndForAddIngredient = InlineKeyboardMarkup.builder()
+                .keyboardRow(List.of(ready))
+                .build();
+
+        return keyboardEndForAddIngredient;
+    }
 }
