@@ -33,6 +33,18 @@ public class KeyboardFactory {
         return keyboardForMenu;
     }
 
+    public static InlineKeyboardMarkup backToMainMenu() {
+        InlineKeyboardButton back = InlineKeyboardButton.builder()
+                .text("Назад").callbackData("ADD:MAIN:MENU")
+                .build();
+
+        InlineKeyboardMarkup keyboardbackToMenu = InlineKeyboardMarkup.builder()
+                .keyboardRow(List.of(back))
+                .build();
+
+        return keyboardbackToMenu;
+    }
+
     public static InlineKeyboardMarkup chooseTypeOfDish() {
         InlineKeyboardButton main = InlineKeyboardButton.builder()
                 .text("Самостоятельное блюдо").callbackData("ADD:TYPE:MAIN")
@@ -224,5 +236,17 @@ public class KeyboardFactory {
                 .build();
 
         return keyboardEndForAddIngredient;
+    }
+
+    public static InlineKeyboardMarkup editIngStopEnterNumber() {
+        InlineKeyboardButton back = InlineKeyboardButton.builder()
+                .text("Назад").callbackData("EDIT:ING:DONE")
+                .build();
+
+        InlineKeyboardMarkup keyboardEndForEnterNumberIngredient = InlineKeyboardMarkup.builder()
+                .keyboardRow(List.of(back))
+                .build();
+
+        return keyboardEndForEnterNumberIngredient;
     }
 }

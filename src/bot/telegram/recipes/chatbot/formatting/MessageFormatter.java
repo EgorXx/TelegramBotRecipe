@@ -70,12 +70,12 @@ public class MessageFormatter {
 
     public static String editTitleRecipe(String title) {
         return "Cтарое название: " + title
-                + "\n" + "Введите пожалуйста новое название блюда";
+                + "\n\n" + "Введите пожалуйста новое название блюда";
     }
 
     public static String editStepsRecipe(String steps) {
         return "Cтарый пошаговый рецепт: " + steps
-                + "\n" + "Введите пожалуйста новый пошаговый рецепт";
+                + "\n\n" + "Введите пожалуйста новый пошаговый рецепт";
     }
 
     public static String editDone() {

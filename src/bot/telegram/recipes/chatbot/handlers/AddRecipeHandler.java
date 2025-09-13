@@ -16,6 +16,8 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -39,13 +41,15 @@ public class AddRecipeHandler {
         switch (currentStage) {
             case IDLE -> handleStartAddRecipe(callbackQuery);
             case ADD_TYPE -> {
-                if (!callbackQuery.getData().startsWith("ADD:TYPE:")) {
+                if (callbackQuery.getData().startsWith("ADD:TYPE:")) {
+                    handleSelectedType(callbackQuery);
+                } else if (callbackQuery.getData().startsWith("ADD:MAIN:MENU")) {
+                    backToMenu(callbackQuery);
+                } else {
                     telegramBotSender.sendMessage(chatId,
                             "Извините, но сейчас вам нужно выбрать тип блюда для рецепта, который хотите добавить :)");
+
                     //TODO Переделать обработчк для нужного экрана
-                    handleStartAddRecipe(callbackQuery);
-                } else {
-                    handleSelectedType(callbackQuery);
                 }
             }
             case ADD_ING_UNIT -> {
@@ -53,7 +57,6 @@ public class AddRecipeHandler {
                     telegramBotSender.sendMessage(chatId,
                             "Извините, но сейчас вам нужно выбрать единицу измерения для ингридиента, который хотите добавить :)");
                     //TODO Переделать обработчк для нужного экрана
-                    handleStartAddRecipe(callbackQuery);
                 } else {
                     handleSelectedUnit(callbackQuery);
                 }
@@ -74,7 +77,7 @@ public class AddRecipeHandler {
                 if (callbackQuery.getData().startsWith("ADD:RECIPE:REWIEW")) {
                     handleStartEditRecipe(callbackQuery);
                 } else if (callbackQuery.getData().startsWith("ADD:RECIPE:SAVE")) {
-                    //TODO доделать реализацию
+                    handleRecipeSave(callbackQuery);
                 } else {
                     //TODO Переделать обработчк для нужного экрана
                 }
@@ -152,6 +155,19 @@ public class AddRecipeHandler {
                     handleEditIngAddNewDone(callbackQuery);
                 }
             }
+
+            case EDIT_ING -> {
+                if (callbackQuery.getData().startsWith("EDIT:ING:DONE")) {
+                    handleEditIngStopEnterNumber(callbackQuery);
+                }
+            }
+
+            case REMOVE_ING -> {
+                if (callbackQuery.getData().startsWith("EDIT:ING:DONE")) {
+                    handleEditIngStopEnterNumber(callbackQuery);
+                }
+            }
+
         }
     }
 
@@ -178,31 +194,45 @@ public class AddRecipeHandler {
 
     public void handleStartAddRecipe(CallbackQuery callbackQuery) {
         Long chatId = callbackQuery.getMessage().getChatId();
+        Integer messageId = callbackQuery.getMessage().getMessageId();
         UserSession userSession = stateStore.get(chatId);
+
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
+
         userSession.setStage(Stage.ADD_TYPE);
 
-        telegramBotSender.sendMessageWithParseMode(chatId,
+        Message mesToRemove2 = telegramBotSender.editMessageTextWithKeybord(chatId,
+                messageId,
                 MessageFormatter.startAddRecipe(),
+                KeyboardFactory.backToMainMenu(),
                 "HTML");
 
-        telegramBotSender.sendMessageWithParseMode(chatId,
+        Message mesToRemove1 = telegramBotSender.sendMessageWithParseMode(chatId,
                 MessageFormatter.selectTypeOfDish(),
                 KeyboardFactory.chooseTypeOfDish(),
                 "HTML");
 
+        mesegesToRemove.add(mesToRemove1);
+        mesegesToRemove.add(mesToRemove2);
     }
 
     public void handleSelectedType(CallbackQuery callbackQuery) {
         Long chatId = callbackQuery.getMessage().getChatId();
         UserSession userSession = stateStore.get(chatId);
 
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
+        deleteMessagesFromList(mesegesToRemove);
+
         Recipe draftRecipe = userSession.getDarftRecipe();
         draftRecipe.setType(getTypeOfDish(callbackQuery));
         userSession.setStage(Stage.ADD_NAME);
 
-        telegramBotSender.sendMessageWithParseMode(chatId,
+        Message mesToRemove = telegramBotSender.sendMessageWithParseMode(chatId,
                 MessageFormatter.addNameForDish(),
                 "HTML");
+
+        mesegesToRemove.add(mesToRemove);
+
     }
 
     public TypeOfDish getTypeOfDish(CallbackQuery callbackQuery) {
@@ -229,15 +259,20 @@ public class AddRecipeHandler {
             return;
         }
 
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
+        deleteMessagesFromList(mesegesToRemove);
+
         Recipe draftRecipe = userSession.getDarftRecipe();
         draftRecipe.setTitle(title);
 
         userSession.setStage(Stage.ADD_ING_NAME);
 
-        telegramBotSender.sendMessageWithParseMode(chatId,
+        Message mesToRemove = telegramBotSender.sendMessageWithParseMode(chatId,
                 MessageFormatter.addNameForIngredient(),
                 KeyboardFactory.endForAddIngredient(),
                 "HTML");
+
+        mesegesToRemove.add(mesToRemove);
 
     }
 
@@ -253,6 +288,9 @@ public class AddRecipeHandler {
             return;
         }
 
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
+        deleteMessagesFromList(mesegesToRemove);
+
         Ingredient tempIngredient = userSession.getTempIngredient();
         tempIngredient.setTitle(title);
 
@@ -266,7 +304,10 @@ public class AddRecipeHandler {
 
     public void handleSelectedUnit(CallbackQuery callbackQuery) {
         Long chatId = callbackQuery.getMessage().getChatId();
+        Integer messageId = callbackQuery.getMessage().getMessageId();
         UserSession userSession = stateStore.get(chatId);
+
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
 
         Ingredient tempIngredient = userSession.getTempIngredient();
         Unit unit = getUnitOfIngredient(callbackQuery);
@@ -274,10 +315,14 @@ public class AddRecipeHandler {
 
         userSession.setStage(Stage.ADD_ING_COUNT);
 
-        telegramBotSender.sendMessageWithParseMode(chatId,
+        Message mesToRemove = telegramBotSender.editMessageTextWithKeybord(chatId,
+                messageId,
                 MessageFormatter.addCountForIngredient() + " (" +
                 MessageFormatter.UnitToString(unit) + ")",
+                null,
                 "HTML");
+
+        mesegesToRemove.add(mesToRemove);
     }
 
     public Unit getUnitOfIngredient(CallbackQuery callbackQuery) {
@@ -332,12 +377,17 @@ public class AddRecipeHandler {
         draftRecipe.getIngredients().add(tempIngredient);
         userSession.setTempIngredient(new Ingredient());
 
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
+        deleteMessagesFromList(mesegesToRemove);
+
         userSession.setStage(Stage.ADD_ING_NAME);
 
-        telegramBotSender.sendMessageWithParseMode(chatId,
+        Message mesToRemove = telegramBotSender.sendMessageWithParseMode(chatId,
                 MessageFormatter.addNameForIngredient(),
                 KeyboardFactory.endForAddIngredient(),
                 "HTML");
+
+        mesegesToRemove.add(mesToRemove);
     }
 
     public boolean stringIsDouble(String str) {
@@ -398,12 +448,18 @@ public class AddRecipeHandler {
         UserSession userSession = stateStore.get(chatId);
         userSession.setStage(Stage.ADD_STEPS);
 
-        telegramBotSender.sendMessage(chatId,
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
+        deleteMessagesFromList(mesegesToRemove);
+
+        Message mesToRemove1 = telegramBotSender.sendMessage(chatId,
                 "Вы завершили добавление ингредиентов, необходимых для блюда");
 
-        telegramBotSender.sendMessageWithParseMode(chatId,
+        Message mesToRemove2 = telegramBotSender.sendMessageWithParseMode(chatId,
                 MessageFormatter.addStepsForRecipe(),
                 "HTML");
+
+        mesegesToRemove.add(mesToRemove1);
+        mesegesToRemove.add(mesToRemove2);
     }
 
     public void handleAddStepsForRecipe(Message message) {
@@ -422,15 +478,20 @@ public class AddRecipeHandler {
         Recipe draftRecipe = userSession.getDarftRecipe();
         draftRecipe.setSteps(steps);
 
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
+        deleteMessagesFromList(mesegesToRemove);
+
         userSession.setStage(Stage.ADD_REWIEW);
 
-        telegramBotSender.sendMessage(chatId,
+        Message mesToRemove = telegramBotSender.sendMessage(chatId,
                 "Формирование рецепта завершено!");
 
         telegramBotSender.sendMessageWithParseMode(chatId,
                 MessageFormatter.RecipeToString(draftRecipe),
                 KeyboardFactory.doneOrRewiewRecipe(),
                 "HTML");
+
+        mesegesToRemove.add(mesToRemove);
 
     }
 
@@ -439,6 +500,9 @@ public class AddRecipeHandler {
         Integer messageId = callbackQuery.getMessage().getMessageId();
         UserSession userSession = stateStore.get(chatId);
         Recipe draftRecipe = userSession.getDarftRecipe();
+
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
+        deleteMessagesFromList(mesegesToRemove);
 
         userSession.setStage(Stage.EDIT_FIELD_SELECT);
 
@@ -452,28 +516,42 @@ public class AddRecipeHandler {
 
     public void handleEditTitleRecipe(CallbackQuery callbackQuery) {
         Long chatId = callbackQuery.getMessage().getChatId();
+        Integer messageId = callbackQuery.getMessage().getMessageId();
         UserSession userSession = stateStore.get(chatId);
 
         Recipe draftRecipe = userSession.getDarftRecipe();
         String title = draftRecipe.getTitle();
 
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
+
         userSession.setStage(Stage.EDIT_TITLE);
 
-        telegramBotSender.sendMessage(chatId,
-                MessageFormatter.editTitleRecipe(title));
+        Message mesToRemove = telegramBotSender.editMessageTextWithKeybord(chatId,
+                messageId,
+                MessageFormatter.editTitleRecipe(title),
+                null);
+
+        mesegesToRemove.add(mesToRemove);
     }
 
     public void handleEditStepsRecipe(CallbackQuery callbackQuery) {
         Long chatId = callbackQuery.getMessage().getChatId();
+        Integer messageId = callbackQuery.getMessage().getMessageId();
         UserSession userSession = stateStore.get(chatId);
 
         Recipe draftRecipe = userSession.getDarftRecipe();
         String steps = draftRecipe.getSteps();
 
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
+
         userSession.setStage(Stage.EDIT_STEPS);
 
-        telegramBotSender.sendMessage(chatId,
-                MessageFormatter.editStepsRecipe(steps));
+        Message mesToRemove = telegramBotSender.editMessageTextWithKeybord(chatId,
+                messageId,
+                MessageFormatter.editStepsRecipe(steps),
+                null);
+
+        mesegesToRemove.add(mesToRemove);
     }
 
     public void handleAddNewTitleForRecipe(Message message) {
@@ -491,15 +569,20 @@ public class AddRecipeHandler {
         Recipe draftRecipe = userSession.getDarftRecipe();
         draftRecipe.setTitle(newTitle);
 
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
+        deleteMessagesFromList(mesegesToRemove);
+
         userSession.setStage(Stage.EDIT_FIELD_SELECT);
 
-        telegramBotSender.sendMessage(chatId,
+        Message mesToRemove = telegramBotSender.sendMessage(chatId,
                 MessageFormatter.editDone());
 
         telegramBotSender.sendMessageWithParseMode(chatId,
                 MessageFormatter.RecipeToString(draftRecipe) + MessageFormatter.startEditRecipe(),
                 KeyboardFactory.selectFieldForEditRecipe(),
                 "HTML");
+
+        mesegesToRemove.add(mesToRemove);
     }
 
     public void handleAddNewStepsForRecipe(Message message) {
@@ -517,15 +600,20 @@ public class AddRecipeHandler {
         Recipe draftRecipe = userSession.getDarftRecipe();
         draftRecipe.setSteps(newSteps);
 
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
+        deleteMessagesFromList(mesegesToRemove);
+
         userSession.setStage(Stage.EDIT_FIELD_SELECT);
 
-        telegramBotSender.sendMessage(chatId,
+        Message mesToRemove = telegramBotSender.sendMessage(chatId,
                 MessageFormatter.editDone());
 
         telegramBotSender.sendMessageWithParseMode(chatId,
                 MessageFormatter.RecipeToString(draftRecipe) + MessageFormatter.startEditRecipe(),
                 KeyboardFactory.selectFieldForEditRecipe(),
                 "HTML");
+
+        mesegesToRemove.add(mesToRemove);
     }
 
     public void handleEditDone(CallbackQuery callbackQuery) {
@@ -534,6 +622,9 @@ public class AddRecipeHandler {
         UserSession userSession = stateStore.get(chatId);
 
         Recipe draftRecipe = userSession.getDarftRecipe();
+
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
+        deleteMessagesFromList(mesegesToRemove);
 
         userSession.setStage(Stage.ADD_REWIEW);
 
@@ -606,18 +697,24 @@ public class AddRecipeHandler {
         Recipe draftRecipe = userSession.getDarftRecipe();
         List<Ingredient> ingredients = draftRecipe.getIngredients();
 
+        List<Message>  mesegesToRemove = userSession.getRemoveMessages();
+
         userSession.setStage(Stage.EDIT_ING);
 
-        telegramBotSender.editMessageTextWithKeybord(chatId,
+        Message mesToRemove = telegramBotSender.editMessageTextWithKeybord(chatId,
                 messageId,
                 MessageFormatter.changeIng(ingredients),
-                null,
+                KeyboardFactory.editIngStopEnterNumber(),
                 "HTML");
+
+        mesegesToRemove.add(mesToRemove);
     }
 
     public void handleChangeIng(Message message) {
         Long chatId = message.getChatId();
         UserSession userSession = stateStore.get(chatId);
+
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
 
         Recipe draftRecipe = userSession.getDarftRecipe();
         List<Ingredient> ingredients = draftRecipe.getIngredients();
@@ -629,24 +726,36 @@ public class AddRecipeHandler {
         try {
             numberOfIng = Integer.parseInt(text);
         } catch (NumberFormatException e) {
-            telegramBotSender.sendMessage(chatId,
+            Message mesToRemove1 = telegramBotSender.sendMessage(chatId,
                     "Введен неправильный формат числа (Пример: 1, 10, 110)");
 
-            telegramBotSender.sendMessageWithParseMode(chatId,
+            Message mesToRemove2 = telegramBotSender.sendMessageWithParseMode(chatId,
                     MessageFormatter.changeIng(ingredients),
+                    KeyboardFactory.editIngStopEnterNumber(),
                     "HTML");
+
+            mesegesToRemove.add(mesToRemove1);
+            mesegesToRemove.add(mesToRemove2);
+
             return;
         }
 
         if (ingredients.size() < numberOfIng || numberOfIng <= 0) {
-            telegramBotSender.sendMessage(chatId,
+            Message mesToRemove1 = telegramBotSender.sendMessage(chatId,
                     "Ингредиента с таким номером нет, повторите ввод");
 
-            telegramBotSender.sendMessageWithParseMode(chatId,
+            Message mesToRemove2 = telegramBotSender.sendMessageWithParseMode(chatId,
                     MessageFormatter.changeIng(ingredients),
+                    KeyboardFactory.editIngStopEnterNumber(),
                     "HTML");
+
+            mesegesToRemove.add(mesToRemove1);
+            mesegesToRemove.add(mesToRemove2);
+
             return;
         }
+
+        deleteMessagesFromList(mesegesToRemove);
 
         userSession.setLastIndex(numberOfIng);
         userSession.setStage(Stage.EDIT_ING_FIELD_SELECT);
@@ -661,17 +770,21 @@ public class AddRecipeHandler {
         Integer messageId = callbackQuery.getMessage().getMessageId();
         UserSession userSession = stateStore.get(chatId);
 
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
+
         Integer indexIng = userSession.getLastIndex();
 
         Recipe draftRecipe = userSession.getDarftRecipe();
 
         userSession.setStage(Stage.EDIT_ING_TITLE);
 
-        telegramBotSender.editMessageTextWithKeybord(chatId,
+        Message mesToRemove = telegramBotSender.editMessageTextWithKeybord(chatId,
                 messageId,
                 MessageFormatter.editIngTitle(draftRecipe.getIngredients().get(indexIng - 1), indexIng),
                 null,
                 "HTML");
+
+        mesegesToRemove.add(mesToRemove);
     }
 
     public void handleAddNewTitleForIng(Message message) {
@@ -691,6 +804,9 @@ public class AddRecipeHandler {
 
         Ingredient ingredient = draftRecipe.getIngredients().get(indexIng - 1);
         ingredient.setTitle(newTitle);
+
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
+        deleteMessagesFromList(mesegesToRemove);
 
         userSession.setStage(Stage.EDIT_ING_FIELD_SELECT);
 
@@ -731,7 +847,8 @@ public class AddRecipeHandler {
 
         userSession.setStage(Stage.EDIT_ING_FIELD_SELECT);
 
-        telegramBotSender.sendMessage(chatId,
+        telegramBotSender.editMessageTextWithKeybord(chatId,
+                messageId,
                 MessageFormatter.selectFieldForEditIng(draftRecipe.getIngredients().get(indexIng - 1), indexIng),
                 KeyboardFactory.selectFieldForEditIng());
     }
@@ -745,13 +862,17 @@ public class AddRecipeHandler {
 
         Recipe draftRecipe = userSession.getDarftRecipe();
 
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
+
         userSession.setStage(Stage.EDIT_ING_COUNT);
 
-        telegramBotSender.editMessageTextWithKeybord(chatId,
+        Message mesToRemove = telegramBotSender.editMessageTextWithKeybord(chatId,
                 messageId,
                 MessageFormatter.editIngCount(draftRecipe.getIngredients().get(indexIng - 1), indexIng),
                 null,
                 "HTML");
+
+        mesegesToRemove.add(mesToRemove);
     }
 
     public void handleAddNewCountForIng(Message message) {
@@ -760,6 +881,8 @@ public class AddRecipeHandler {
 
         Recipe draftRecipe = userSession.getDarftRecipe();
         Integer indexIng = userSession.getLastIndex();
+
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
 
         String newCount = (message.getText() == null ? "" : message.getText().trim());
 
@@ -771,19 +894,24 @@ public class AddRecipeHandler {
         }
 
         if ((!stringIsDouble(newCount)) || newCount.equals("0")) {
-            telegramBotSender.sendMessage(chatId,
+            Message mesToRemove1 = telegramBotSender.sendMessage(chatId,
                     "Введен неправильный формат числа (Пример верного формата: 1.5 / 1,5 / 123)");
 
-            telegramBotSender.sendMessageWithParseMode(chatId,
+            Message mesToRemove2 = telegramBotSender.sendMessageWithParseMode(chatId,
                     MessageFormatter.addCountForIngredient() + " (" +
                             MessageFormatter.UnitToString(userSession.getTempIngredient().getUnit()) + ")",
                     "HTML");
+
+            mesegesToRemove.add(mesToRemove1);
+            mesegesToRemove.add(mesToRemove2);
 
             return;
         }
 
         Ingredient ingredient = draftRecipe.getIngredients().get(indexIng - 1);
         ingredient.setCount(Double.parseDouble(newCount.replace(",", ".")));
+
+        deleteMessagesFromList(mesegesToRemove);
 
         userSession.setStage(Stage.EDIT_ING_FIELD_SELECT);
 
@@ -800,19 +928,25 @@ public class AddRecipeHandler {
         Recipe draftRecipe = userSession.getDarftRecipe();
         List<Ingredient> ingredients = draftRecipe.getIngredients();
 
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
+
         userSession.setStage(Stage.REMOVE_ING);
 
-        telegramBotSender.editMessageTextWithKeybord(chatId,
+        Message mesToRemove = telegramBotSender.editMessageTextWithKeybord(chatId,
                 messageId,
                 MessageFormatter.removeIng(ingredients),
-                null,
+                KeyboardFactory.editIngStopEnterNumber(),
                 "HTML");
+
+        mesegesToRemove.add(mesToRemove);
     }
 
     public void handleRemoveIng(Message message) {
         Long chatId = message.getChatId();
         Integer messageId = message.getMessageId();
         UserSession userSession = stateStore.get(chatId);
+
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
 
         Recipe draftRecipe = userSession.getDarftRecipe();
         List<Ingredient> ingredients = draftRecipe.getIngredients();
@@ -824,26 +958,38 @@ public class AddRecipeHandler {
         try {
             numberOfIng = Integer.parseInt(text);
         } catch (NumberFormatException e) {
-            telegramBotSender.sendMessage(chatId,
+            Message mesToRemove1 = telegramBotSender.sendMessage(chatId,
                     "Введен неправильный формат числа (Пример: 1, 10, 110)");
 
-            telegramBotSender.sendMessageWithParseMode(chatId,
-                    MessageFormatter.changeIng(ingredients),
+            Message mesToRemove2 = telegramBotSender.sendMessageWithParseMode(chatId,
+                    MessageFormatter.removeIng(ingredients),
+                    KeyboardFactory.editIngStopEnterNumber(),
                     "HTML");
+
+            mesegesToRemove.add(mesToRemove1);
+            mesegesToRemove.add(mesToRemove2);
+
             return;
         }
 
         if (ingredients.size() < numberOfIng || numberOfIng <= 0) {
-            telegramBotSender.sendMessage(chatId,
+            Message mesToRemove1 = telegramBotSender.sendMessage(chatId,
                     "Ингредиента с таким номером нет, повторите ввод");
 
-            telegramBotSender.sendMessageWithParseMode(chatId,
-                    MessageFormatter.changeIng(ingredients),
+            Message mesToRemove2 = telegramBotSender.sendMessageWithParseMode(chatId,
+                    MessageFormatter.removeIng(ingredients),
+                    KeyboardFactory.editIngStopEnterNumber(),
                     "HTML");
+
+            mesegesToRemove.add(mesToRemove1);
+            mesegesToRemove.add(mesToRemove2);
+
             return;
         }
 
         ingredients.remove(numberOfIng - 1);
+
+        deleteMessagesFromList(mesegesToRemove);
 
         userSession.setStage(Stage.EDIT_ING_LIST);
 
@@ -858,19 +1004,25 @@ public class AddRecipeHandler {
         Integer messageId = callbackQuery.getMessage().getMessageId();
         UserSession userSession = stateStore.get(chatId);
 
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
+
         userSession.setStage(Stage.EDIT_ING_ADD_NAME);
 
-        telegramBotSender.editMessageTextWithKeybord(chatId,
+        Message mesToRemove = telegramBotSender.editMessageTextWithKeybord(chatId,
                 messageId,
                 MessageFormatter.addNameForIngredient(),
                 KeyboardFactory.editIngEndForAdd(),
                 "HTML");
+
+        mesegesToRemove.add(mesToRemove);
     }
 
     public void handleEditIngAddNameForIngredient(Message message) {
         Long chatId = message.getChatId();
         UserSession userSession = stateStore.get(chatId);
         String title = message.getText() == null ? "" : message.getText().trim();
+
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
 
         if (title.isEmpty()) {
             telegramBotSender.sendMessageWithParseMode(chatId,
@@ -882,6 +1034,8 @@ public class AddRecipeHandler {
         Ingredient tempIngredient = userSession.getTempIngredient();
         tempIngredient.setTitle(title);
 
+        deleteMessagesFromList(mesegesToRemove);
+
         userSession.setStage(Stage.EDIT_ING_ADD_UNIT);
 
         telegramBotSender.sendMessageWithParseMode(chatId,
@@ -892,7 +1046,10 @@ public class AddRecipeHandler {
 
     public void handleEditIngSelectedUnit(CallbackQuery callbackQuery) {
         Long chatId = callbackQuery.getMessage().getChatId();
+        Integer messageId = callbackQuery.getMessage().getMessageId();
         UserSession userSession = stateStore.get(chatId);
+
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
 
         Ingredient tempIngredient = userSession.getTempIngredient();
         Unit unit = getUnitOfIngredient(callbackQuery);
@@ -900,15 +1057,21 @@ public class AddRecipeHandler {
 
         userSession.setStage(Stage.EDIT_ING_ADD_COUNT);
 
-        telegramBotSender.sendMessageWithParseMode(chatId,
+        Message mesToRemove = telegramBotSender.editMessageTextWithKeybord(chatId,
+                messageId,
                 MessageFormatter.addCountForIngredient() + " (" +
                         MessageFormatter.UnitToString(unit) + ")",
+                null,
                 "HTML");
+
+        mesegesToRemove.add(mesToRemove);
     }
 
     public void handleEditIngAddCountForIngredient(Message message) {
         Long chatId = message.getChatId();
         UserSession userSession = stateStore.get(chatId);
+
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
 
         String count = (message.getText() == null ? "" : message.getText().trim());
 
@@ -920,13 +1083,16 @@ public class AddRecipeHandler {
         }
 
         if ((!stringIsDouble(count)) || count.equals("0")) {
-            telegramBotSender.sendMessage(chatId,
+            Message mesToRemove1 = telegramBotSender.sendMessage(chatId,
                     "Введен неправильный формат числа (Пример верного формата: 1.5 / 1,5 / 123)");
 
-            telegramBotSender.sendMessageWithParseMode(chatId,
+            Message mesToRemove2 = telegramBotSender.sendMessageWithParseMode(chatId,
                     MessageFormatter.addCountForIngredient() + " (" +
                             MessageFormatter.UnitToString(userSession.getTempIngredient().getUnit()) + ")",
                     "HTML");
+
+            mesegesToRemove.add(mesToRemove1);
+            mesegesToRemove.add(mesToRemove2);
 
             return;
         }
@@ -941,6 +1107,8 @@ public class AddRecipeHandler {
         Recipe draftRecipe = userSession.getDarftRecipe();
         draftRecipe.getIngredients().add(tempIngredient);
         userSession.setTempIngredient(new Ingredient());
+
+        deleteMessagesFromList(mesegesToRemove);
 
         userSession.setStage(Stage.EDIT_ING_ADD_NAME);
 
@@ -982,4 +1150,72 @@ public class AddRecipeHandler {
                 KeyboardFactory.selectFieldForEditRecipe(),
                 "HTML");
     }
+
+    public void deleteMessagesFromList(List<Message> messages) {
+        Long chatId;
+        Integer messageId;
+        for (Message message : messages) {
+            chatId = message.getChatId();
+            messageId = message.getMessageId();
+            telegramBotSender.deleteMessage(chatId, messageId);
+        }
+
+        messages = new ArrayList<>();
+    }
+
+    public void handleEditIngStopEnterNumber(CallbackQuery callbackQuery) {
+        Long chatId = callbackQuery.getMessage().getChatId();
+        UserSession userSession = stateStore.get(chatId);
+
+        Recipe draftRecipe = userSession.getDarftRecipe();
+        List<Ingredient> ingredients = draftRecipe.getIngredients();
+
+        List<Message>  mesegesToRemove = userSession.getRemoveMessages();
+        deleteMessagesFromList(mesegesToRemove);
+
+        userSession.setStage(Stage.EDIT_ING_LIST);
+
+        telegramBotSender.sendMessageWithParseMode(chatId,
+                MessageFormatter.editIngList(ingredients),
+                KeyboardFactory.selectFieldForEditIngredients(),
+                "HTML");
+    }
+
+    public void handleRecipeSave(CallbackQuery callbackQuery) {
+        Long chatId = callbackQuery.getMessage().getChatId();
+        Integer messageId = callbackQuery.getMessage().getMessageId();
+        UserSession userSession = stateStore.get(chatId);
+
+        Recipe draftRecipe = userSession.getDarftRecipe();
+
+        saveRecipe(draftRecipe);
+
+        telegramBotSender.sendMessage(chatId,
+                "✅ Ваш рецепт успешно сохранен!");
+
+        telegramBotSender.deleteMessage(chatId, messageId);
+
+        backToMenu(callbackQuery);
+    }
+
+    public void backToMenu(CallbackQuery callbackQuery) {
+        Long chatId = callbackQuery.getMessage().getChatId();
+        UserSession userSession = stateStore.get(chatId);
+
+        List<Message> mesegesToRemove = userSession.getRemoveMessages();
+        deleteMessagesFromList(mesegesToRemove);
+
+        userSession = UserSession.defaultSession();
+        stateStore.set(chatId, userSession);
+
+        telegramBotSender.sendMessageWithParseMode(chatId,
+                MessageFormatter.menuTitle(),
+                KeyboardFactory.mainMenu(),
+                "HTML");
+    }
+
+    public void saveRecipe(Recipe recipe) {
+        recipeService.saveRecipe(recipe);
+    }
+
 }

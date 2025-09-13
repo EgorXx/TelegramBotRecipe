@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface IngredientRepositoryJdbc {
-    void save(Ingredient ingredient);
+    void save(Ingredient ingredient, int recipeId);
 
     List<Ingredient> findAll();
 
